@@ -55,7 +55,6 @@ class LLMClient(ABC):
     def chat_completion(
         self,
         messages: List[Dict[str, str]],
-        model: str,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """
@@ -86,25 +85,14 @@ class LLMClient(ABC):
         """
     
     @abstractmethod
-    def api_coding(
-        self,
-        request: str
-    ) -> str:
-        """
-        Generate API requests to scientific databases upon request 
-        """
-    
-    
-    @abstractmethod
     def analyze(
         self,
-        article: str
+        article: str,
     ) -> str:
         """
-        Parse the article into structured text
+        Analyze article
         """
-    
-    
+        
     @abstractmethod
     def find_connect(
         self,
@@ -112,6 +100,5 @@ class LLMClient(ABC):
         user_query: str
     ) -> str:
         """
-        Resolve associations with user goals 
-        based on incoming structured article content
+        Find Connect
         """

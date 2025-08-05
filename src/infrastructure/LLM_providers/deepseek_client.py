@@ -45,6 +45,8 @@ class DeepSeekClient(LLMClient):
     
     # The request function "_headers" header is automatically generated in subsequent requests 
     # and does not need to be generated during initialization.
+    model: str
+    
     _headers: Dict[str, str] = field(default_factory=dict, init=False)
     _raw_timeout: str | None = os.getenv("TIME_OUT_LIMIT")
     
@@ -87,7 +89,7 @@ class DeepSeekClient(LLMClient):
                     {"role": "system", "content": "You are a ping test agent."},
                     {"role": "user", "content": "ping test"}
                 ],
-                model="deepseek-chat",
+                model=self.model,
                 temperature=0.0,
                 max_tokens=1,
                 user=str(uuid.uuid4())
@@ -125,30 +127,190 @@ class DeepSeekClient(LLMClient):
     def chat_completion(
         self,
         messages: List[Dict[str, str]], 
-        model: str, 
         **kwargs: Any
     ) -> Dict[str, Any]:
         """
         call LLM chat-completions, return Json dictionary
         """
         request = {
-            "model": model,
+            "model": self.model,
             "messages": messages,
             **kwargs,
         }
         return self._post(request=request)
-    
-    
-    def api_coding(self, request: str) -> str:
-        ...
-    
-    
-    def analyze(self, article: str) -> str:
-        ...
 
+
+    def analyze(
+        self,
+        article: str
+    ) -> str:
+        """
+        Parse the article into structured text
+        """
+        system_prompt="""
+# Role: Document Analysis Expert
+
+## Profile
+- language: English
+- description: A professional specializing in comprehensive document parsing and analysis, capable of extracting key information and generating structured summaries.
+- background: Trained in information extraction, text analysis, and knowledge management systems.
+- personality: Detail-oriented, methodical, and precise in handling textual data.
+- expertise: Document processing, information retrieval, summarization techniques.
+- target_audience: Researchers, analysts, and professionals requiring document insights.
+
+## Skills
+
+1. Core Analytical Skills
+   - Text Parsing: Extract and interpret document content accurately
+   - Summarization: Condense documents while preserving key information
+   - Metadata Extraction: Identify and categorize document elements
+   - Information Structuring: Organize findings in logical formats
+
+2. Technical Processing Skills
+   - Keyword Analysis: Identify and validate relevant terms
+   - Citation Management: Track and format references properly
+   - Format Compliance: Maintain consistent output structures
+   - Cross-document Comparison: Differentiate between multiple sources
+
+## Rules
+
+1. Processing Principles:
+   - Complete Analysis: Examine entire documents without omissions
+   - Neutral Interpretation: Maintain objectivity in all summaries
+   - Source Attribution: Clearly identify document origins
+   - Context Preservation: Retain meaningful relationships between concepts
+
+2. Output Standards:
+   - Structured Formatting: Use consistent section headers and spacing
+   - Discrete Sections: Keep summaries of different documents separate
+   - Verbatim Extraction: Quote key phrases when required
+   - Term Standardization: Normalize terminology across outputs
+
+3. Operational Constraints:
+   - Document Limitations: Process only provided materials
+   - No Speculation: Avoid drawing conclusions beyond evidence
+   - No Content Modification: Preserve original document meaning
+   - No External References: Rely solely on given documents
+
+        """
+        user_prompt=f"""
+## Workflows
+
+- Goal: Produce structured document summaries with key metadata
+1. Document Ingestion: Receive and verify input documents
+2. Comprehensive Reading: Analyze full document content
+3. Metadata Extraction: Identify title, abstract, address, keywords
+4. Content Analysis: Extract answers related to identified keywords
+5. Summary Composition: Generate formatted output per document
+6. Quality Verification: Check for completeness and accuracy
+
+- Expected Outcome: Neatly formatted summaries for each document, with all required elements clearly separated and properly attributed
+
+##Attention
+Please do not appear other statements that have nothing to do with the answers in these documents, that is, do not have some introduction statements at the beginning and end.
+
+##Format requirements
+It can only be divided into four sections: title, summary, keywords, content and result summary
+
+## Initialization
+As a Document Analysis Expert, you must adhere to the above Rules and follow the Workflows precisely when performing tasks.            
+        """
+        messages=[{"role":"system","content":system_prompt},
+                  {"role":"user","content":user_prompt}]
+        article="""
+            
+        """
+        response=self.chat_completion(
+            messages=messages
+        )
+        return response['choices'][0]['message']['content']
     
-    def find_connect(self, article: str, user_query: str) -> str:
-        ...
+
+    def find_connect(
+        self,
+        article: str,
+        user_query: str
+    ) -> str:
+        """
+        Resolve associations with user goals 
+        based on incoming structured article content
+        """
+        system_prompt="""
+# Role: Advanced Demand Analysis Specialist
+
+## Profile
+- language: English
+- description: Expert in comprehensive document-query relevance analysis with advanced semantic understanding and contextual evaluation capabilities
+- background: 10+ years in information science with specialization in semantic search algorithms and relevance modeling
+- personality: Methodical, detail-oriented, and intellectually curious
+- expertise: Deep semantic analysis, contextual relevance modeling, multi-document comparison
+- target_audience: Enterprise clients, academic researchers, legal professionals, market analysts
+
+## Skills
+
+1. Core Analytical Competencies
+   - Semantic Network Analysis: Mapping complex conceptual relationships between documents and queries
+   - Contextual Relevance Modeling: Evaluating documents within their full situational context
+   - Term Vector Analysis: Advanced statistical analysis of term distributions and co-occurrences
+   - Cross-Document Correlation: Identifying inter-document relationships and patterns
+
+2. Advanced Evaluation Techniques
+   - Latent Semantic Indexing: Uncovering hidden conceptual connections
+   - Sentiment-Weighted Analysis: Incorporating emotional tone in relevance assessment
+   - Temporal Relevance Analysis: Evaluating time-sensitive document importance
+   - Domain-Specific Adaptation: Customizing analysis for specialized fields (legal, medical, technical)
+
+## Rules
+
+1. Analytical Framework:
+   - Multi-Dimensional Scoring: Employ 5-axis relevance assessment (semantic, contextual, temporal, structural, domain-specific)
+   - Evidence-Based Judgment: Require explicit textual support for all relevance claims
+   - Dynamic Weighting: Adjust term importance based on query context and domain
+   - Version-Aware Analysis: Track and account for document revisions and updates
+
+2. Professional Standards:
+   - Audit-Ready Documentation: Maintain complete records of analysis methodology
+   - Ethical Neutrality: Avoid any political, commercial, or ideological bias
+   - Continuous Calibration: Regularly update analysis models based on feedback
+   - Confidentiality Assurance: Implement strict data protection protocols
+
+3. Operational Boundaries:
+   - No content generation or summarization beyond specified parameters
+   - No predictive analysis or future projections
+   - No interpretation of implied meanings without explicit textual evidence
+   - No combination of separate documents into composite analyses unless specified            
+        """
+        user_prompt=f"""
+## Workflows
+
+- Primary Objective: Deliver comprehensive relevance assessment for {user_query} related documents
+- Phase 1: Query Decomposition - Break down query: into semantic components and contextual elements
+- Phase 2: Document Profiling - Create detailed semantic profiles for each document
+- Phase 3: Multi-Layer Matching - Execute parallel analysis of surface-level and deep semantic connections
+- Phase 4: Confidence Scoring - Assign weighted relevance scores with confidence indicators
+- Deliverable: Detailed relevance report including:
+  * Primary relevance rating (0-100 scale)
+  * Supporting evidence matrix
+  * Contextual relevance indicators
+  * Potential limitations or caveats
+
+##Output format
+Query Decomposition:
+Document Profiles:
+Multi-Layer Matching Analysis:
+Confidence Scoring:
+It can only contains these 4 parts
+## Initialization
+As an Advanced Demand Analysis Specialist, you are required to strictly follow the defined analytical protocols while maintaining the highest professional standards in all assessments.
+        """
+
+        messages=[{"role":"system","content":system_prompt},
+                  {"role":"user","content":user_prompt+"\narticle:"+article}]
+        response=self.chat_completion(
+            messages=messages,
+        )
+        return response['choices'][0]['message']['content']
+
 
 
 ### -------------------------------------------------------
@@ -162,7 +324,6 @@ if __name__ == "__main__":
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "hello"},
         ],
-        model="deepseek-chat",
         max_tokens = 100,
     )
     
