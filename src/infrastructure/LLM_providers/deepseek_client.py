@@ -105,7 +105,15 @@ class DeepSeekClient(LLMClient):
         request: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Post request to DeepSeek Client
+        Send a POST request to the DeepSeek API.
+
+        params
+        ------
+        request: payload sent to the API
+
+        return
+        ------
+        JSON response from the API
         """
         assert self.base_url, "base_url required"
         assert self.end_point, "end_point required"
@@ -126,11 +134,20 @@ class DeepSeekClient(LLMClient):
     ### Public methods
     def chat_completion(
         self,
-        messages: List[Dict[str, str]], 
+        messages: List[Dict[str, str]],
         **kwargs: Any
     ) -> Dict[str, Any]:
         """
-        call LLM chat-completions, return Json dictionary
+        Call the LLM chat-completions endpoint.
+
+        params
+        ------
+        messages: conversation history for the model
+        **kwargs: additional request parameters
+
+        return
+        ------
+        JSON response from the model
         """
         request = {
             "model": self.model,
@@ -138,92 +155,6 @@ class DeepSeekClient(LLMClient):
             **kwargs,
         }
         return self._post(request=request)
-
-
-    def analyze(
-        self,
-        article: str
-    ) -> str:
-        """
-        Parse the article into structured text
-        """
-        system_prompt="""
-# Role: Document Analysis Expert
-
-## Profile
-- language: English
-- description: A professional specializing in comprehensive document parsing and analysis, capable of extracting key information and generating structured summaries.
-- background: Trained in information extraction, text analysis, and knowledge management systems.
-- personality: Detail-oriented, methodical, and precise in handling textual data.
-- expertise: Document processing, information retrieval, summarization techniques.
-- target_audience: Researchers, analysts, and professionals requiring document insights.
-
-## Skills
-
-1. Core Analytical Skills
-   - Text Parsing: Extract and interpret document content accurately
-   - Summarization: Condense documents while preserving key information
-   - Metadata Extraction: Identify and categorize document elements
-   - Information Structuring: Organize findings in logical formats
-
-2. Technical Processing Skills
-   - Keyword Analysis: Identify and validate relevant terms
-   - Citation Management: Track and format references properly
-   - Format Compliance: Maintain consistent output structures
-   - Cross-document Comparison: Differentiate between multiple sources
-
-## Rules
-
-1. Processing Principles:
-   - Complete Analysis: Examine entire documents without omissions
-   - Neutral Interpretation: Maintain objectivity in all summaries
-   - Source Attribution: Clearly identify document origins
-   - Context Preservation: Retain meaningful relationships between concepts
-
-2. Output Standards:
-   - Structured Formatting: Use consistent section headers and spacing
-   - Discrete Sections: Keep summaries of different documents separate
-   - Verbatim Extraction: Quote key phrases when required
-   - Term Standardization: Normalize terminology across outputs
-
-3. Operational Constraints:
-   - Document Limitations: Process only provided materials
-   - No Speculation: Avoid drawing conclusions beyond evidence
-   - No Content Modification: Preserve original document meaning
-   - No External References: Rely solely on given documents
-
-        """
-        user_prompt=f"""
-## Workflows
-
-- Goal: Produce structured document summaries with key metadata
-1. Document Ingestion: Receive and verify input documents
-2. Comprehensive Reading: Analyze full document content
-3. Metadata Extraction: Identify title, abstract, address, keywords
-4. Content Analysis: Extract answers related to identified keywords
-5. Summary Composition: Generate formatted output per document
-6. Quality Verification: Check for completeness and accuracy
-
-- Expected Outcome: Neatly formatted summaries for each document, with all required elements clearly separated and properly attributed
-
-##Attention
-Please do not appear other statements that have nothing to do with the answers in these documents, that is, do not have some introduction statements at the beginning and end.
-
-##Format requirements
-It can only be divided into four sections: title, summary, keywords, content and result summary
-
-## Initialization
-As a Document Analysis Expert, you must adhere to the above Rules and follow the Workflows precisely when performing tasks.            
-        """
-        messages=[{"role":"system","content":system_prompt},
-                  {"role":"user","content":user_prompt}]
-        article="""
-            
-        """
-        response=self.chat_completion(
-            messages=messages
-        )
-        return response['choices'][0]['message']['content']
     
 
     def find_connect(
@@ -232,8 +163,16 @@ As a Document Analysis Expert, you must adhere to the above Rules and follow the
         user_query: str
     ) -> str:
         """
-        Resolve associations with user goals 
-        based on incoming structured article content
+        Resolve associations between the article and user query.
+
+        params
+        ------
+        article: structured article content
+        user_query: user's research question
+
+        return
+        ------
+        Text describing the connections
         """
         system_prompt="""
 # Role: Advanced Demand Analysis Specialist
